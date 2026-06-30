@@ -13,6 +13,10 @@ CONFIG_COMPILER_OPTIMIZATION_SIZE=y
 CONFIG_ESP_GH_OTA_BUF_SIZE=1024
 CONFIG_ESP_GH_OTA_RECV_TIMEOUT=30000
 
+# Optional API key for /api/config endpoint (X-API-Key header).
+# Leave empty for no auth.
+# CONFIG_ESP_GH_OTA_API_KEY=""
+
 # Resume an interrupted OTA across reboots (partial Range download + NVS checkpoint)
 CONFIG_ESP_GH_OTA_ENABLE_PARTIAL_DOWNLOAD=y
 CONFIG_ESP_GH_OTA_ENABLE_RESUMPTION=y
