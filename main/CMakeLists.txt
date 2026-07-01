@@ -7,4 +7,5 @@ idf_component_register(SRCS "app_main.c"
                                   esp_event
                                   esp_wifi
                                   app_update
-                                  esp_https_ota)
+                                  esp_https_ota
+                                  led_strip)

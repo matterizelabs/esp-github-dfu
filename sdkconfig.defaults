@@ -24,4 +24,4 @@ CONFIG_ESP_GH_OTA_ENABLE_RESUMPTION=y
 # Anti-rollback: reject firmware whose secure_version is below the eFuse value.
 # WARNING: enabling this burns eFuses one-way. Do not enable on a dev device
 # unless you manage secure_version bumping per release.
-CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK=y
+CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK=n
