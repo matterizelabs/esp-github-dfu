@@ -1,6 +1,6 @@
 # esp-github-dfu
 
-Reference ESP-IDF application for the [`matterizelabs/esp_gh_ota`](https://components.espressif.com/components/matterizelabs/esp_gh_ota) component. Connects to WiFi, starts the `/api/config` HTTP endpoint, and polls a GitHub Releases feed for firmware updates — automatically flashing a new `.bin` asset when one is detected.
+Reference ESP-IDF application for the [`matterizelabs/esp_gh_ota`](https://components.espressif.com/components/matterizelabs/esp_gh_ota) component. Connects to WiFi, starts the `/api/config` HTTP endpoint, and polls a GitHub Releases feed for firmware updates — automatically flashing a new `.bin` asset when one is detected. An onboard LED (GPIO 8, WS2812) breathes purple normally and blinks yellow during OTA.
 
 ## How it works
 
@@ -20,7 +20,7 @@ Reference ESP-IDF application for the [`matterizelabs/esp_gh_ota`](https://compo
 ## Requirements
 
 - **ESP-IDF** v5.4+ (tested with v6.0.2)
-- **ESP32** (primary target; other ESP32 family may work with `idf.py set-target <chip>`)
+- **ESP32-C3** (primary target; set with `idf.py set-target esp32c3`)
 - **WiFi** credentials (SSID + password)
 - A GitHub repo with tagged releases (`v1.0.0`, `v2.1.3`, etc.) containing `.bin` assets
 
@@ -34,7 +34,7 @@ cd esp-github-dfu
 cp sdkconfig.secrets.example sdkconfig.secrets
 # Edit sdkconfig.secrets with your SSID and password
 
-idf.py set-target esp32
+idf.py set-target esp32c3
 idf.py build
 idf.py flash monitor
 ```
@@ -55,8 +55,10 @@ esp-github-dfu/
 ├── CMakeLists.txt              # project root
 ├── main/
 │   ├── CMakeLists.txt          # component registration + dependencies
-│   ├── app_main.c              # startup sequence (NVS, netif, WiFi, OTA events)
-│   └── idf_component.yml       # pulls esp_gh_ota from registry
+│   ├── app_main.c              # startup (NVS, netif, WiFi retry, LED, OTA events)
+│   └── idf_component.yml       # pulls esp_gh_ota + led_strip from registry
+├── .github/workflows/
+│   └── build.yml               # CI: build on tag, create GitHub Release with .bin
 ├── sdkconfig.defaults          # component config + partitioning
 └── sdkconfig.secrets.example   # WiFi credentials template
 ```
@@ -68,7 +70,7 @@ esp-github-dfu/
 | `PARTITION_TABLE_TWO_OTA_LARGE` | Two OTA app slots (1.8 MB each), 4 MB flash |
 | `ESP_GH_OTA_ENABLE_PARTIAL_DOWNLOAD` | Download via HTTP Range requests |
 | `ESP_GH_OTA_ENABLE_RESUMPTION` | Survive power loss mid-OTA |
-| `CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK` | Reject firmware with lower `secure_version` |
+| `CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK` | Reject firmware with lower `secure_version` (disabled by default) |
 | `ESP_GH_OTA_BUF_SIZE=1024` | OTA buffer size |
 | `ESP_GH_OTA_RECV_TIMEOUT=30000` | OTA receive timeout (ms) |
 
@@ -155,6 +157,7 @@ Set in `sdkconfig.defaults` or via `idf.py menuconfig` under **ESP GitHub OTA**:
 
 - [`matterizelabs/esp_gh_ota`](https://components.espressif.com/components/matterizelabs/esp_gh_ota) — OTA from GitHub Releases
 - `espressif/cjson` — JSON parsing (transitive via esp_gh_ota)
+- `espressif/led_strip` — WS2812 LED driver (breathe/blink indicator)
 - `protocol_examples_common` — WiFi connect helper (from ESP-IDF examples tree)
 
 ## License
