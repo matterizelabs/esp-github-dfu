@@ -22,7 +22,7 @@ jobs:
       - name: Build firmware
         run: |
           . $IDF_PATH/export.sh
-          idf.py set-target esp32
+          idf.py set-target esp32c3
           idf.py build
 
       - name: Upload firmware artifact
