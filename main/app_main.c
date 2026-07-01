@@ -56,6 +56,18 @@ static void led_breathe_task(void *arg)
     }
 }
 
+static void wifi_retry_task(void *arg)
+{
+    while (1) {
+        wifi_ap_record_t ap_info;
+        if (esp_wifi_sta_get_ap_info(&ap_info) != ESP_OK) {
+            ESP_LOGI(TAG, "wifi not connected, retrying...");
+            esp_wifi_connect();
+        }
+        vTaskDelay(pdMS_TO_TICKS(30000));
+    }
+}
+
 static void ota_event_handler(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
     if (base != ESP_HTTPS_OTA_EVENT) {
@@ -95,11 +107,14 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(esp_event_handler_register(ESP_HTTPS_OTA_EVENT, ESP_EVENT_ANY_ID,
                                                &ota_event_handler, NULL));
-    ESP_ERROR_CHECK(example_connect());
-
+    esp_err_t connect_err = example_connect();
+    if (connect_err != ESP_OK) {
+        ESP_LOGW(TAG, "wifi connect failed (0x%x), retrying in background", connect_err);
+    }
     esp_wifi_set_ps(WIFI_PS_NONE);
 
     xTaskCreate(led_breathe_task, "led_breathe", 2048, NULL, 5, NULL);
+    xTaskCreate(wifi_retry_task, "wifi_retry", 2048, NULL, 3, NULL);
 
 #if defined(CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE)
     const esp_partition_t *running = esp_ota_get_running_partition();
