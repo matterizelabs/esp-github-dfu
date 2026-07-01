@@ -10,10 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    container:
-      image: espressif/idf:v6.0.2
-      env:
-        IDF_PATH: /opt/esp/idf
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,29 +19,15 @@ jobs:
 
       - name: Build firmware
         run: |
-          . $IDF_PATH/export.sh
-          idf.py set-target esp32c3
-          idf.py build
-
-      - name: Upload firmware artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: firmware
-          path: build/esp-gh-dfu.bin
-
-  release:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: build
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: firmware
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            espressif/idf:v6.0.2 \
+            /bin/bash -c ". /opt/esp/idf/export.sh && idf.py set-target esp32c3 && idf.py build"
 
       - name: Create release
-        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3
         with:
-          files: esp-gh-dfu.bin
+          files: build/esp-gh-dfu.bin
           generate_release_notes: true
