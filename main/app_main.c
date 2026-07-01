@@ -16,6 +16,7 @@
 static const char *TAG = "main";
 
 static led_strip_handle_t s_led;
+static volatile bool s_ota_active;
 
 static void led_breathe_task(void *arg)
 {
@@ -32,18 +33,25 @@ static void led_breathe_task(void *arg)
     ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_cfg, &rmt_cfg, &s_led));
 
     ESP_LOGI(TAG, "led breathing on gpio %d", LED_GPIO);
+    int tick = 0;
     float phase = 0.0f;
     while (1) {
-        float val = (sinf(phase) + 1.0f) / 2.0f;
-        led_strip_set_pixel(s_led, 0,
-            (uint8_t)(val * 16),
-            (uint8_t)(val * 8),
-            (uint8_t)(val * 32));
-        led_strip_refresh(s_led);
-        phase += 0.02f;
-        if (phase > 2.0f * M_PI) {
-            phase -= 2.0f * M_PI;
+        if (s_ota_active) {
+            uint8_t on = (tick % 20) < 10 ? 32 : 0;
+            led_strip_set_pixel(s_led, 0, on, on, 0);
+        } else {
+            float val = (sinf(phase) + 1.0f) / 2.0f;
+            led_strip_set_pixel(s_led, 0,
+                (uint8_t)(val * 16),
+                (uint8_t)(val * 8),
+                (uint8_t)(val * 32));
+            phase += 0.02f;
+            if (phase > 2.0f * M_PI) {
+                phase -= 2.0f * M_PI;
+            }
         }
+        led_strip_refresh(s_led);
+        tick++;
         vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
@@ -56,15 +64,18 @@ static void ota_event_handler(void *arg, esp_event_base_t base, int32_t id, void
     switch (id) {
     case ESP_HTTPS_OTA_START:
         ESP_LOGI(TAG, "OTA started");
+        s_ota_active = true;
         break;
     case ESP_HTTPS_OTA_CONNECTED:
         ESP_LOGI(TAG, "connected to server");
         break;
     case ESP_HTTPS_OTA_FINISH:
         ESP_LOGI(TAG, "OTA finish");
+        s_ota_active = false;
         break;
     case ESP_HTTPS_OTA_ABORT:
         ESP_LOGW(TAG, "OTA abort");
+        s_ota_active = false;
         break;
     default:
         break;
